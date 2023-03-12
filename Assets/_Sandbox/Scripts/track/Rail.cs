@@ -31,16 +31,9 @@ public class Rail : MonoBehaviour
         positionCount = lineRenderer.positionCount;
         Vector3[] positions = new Vector3[positionCount];
         lineRenderer.GetPositions(positions);
-        List<Vector3> vertices = new();
 
-        foreach (Vector3 position in positions)
-        {
-            vertices.Add(position);
-            vertices.Add(position);
-        }
-
-        startProfile.Vertices = new List<Vector3>(vertices);
-        endProfile.Vertices = new List<Vector3>(vertices);
+        startProfile.Vertices = new List<Vector3>(positions);
+        endProfile.Vertices = new List<Vector3>(positions);
 
         BuildProfiles();
         BuildMesh();
@@ -71,21 +64,14 @@ public class Rail : MonoBehaviour
 
         Vector3[] positions = new Vector3[positionCount];
         lineRenderer.GetPositions(positions);
-        List<Vector3> vertices = new();
 
-        foreach (Vector3 position in positions)
-        {
-            vertices.Add(position);
-            vertices.Add(position);
-        }
 
         for (int i = 0; i < resolution; i++)
         {
-
-            Profile instance = Instantiate(this.profile, transform.position, transform.rotation);
+            Profile instance = Instantiate(profile, transform.position, transform.rotation);
             instance.Rail = this;
             instance.transform.parent = transform;
-            instance.Vertices = new List<Vector3>(vertices);
+            instance.Vertices = new List<Vector3>(positions);
             profiles.Add(instance);
         }
 
@@ -97,30 +83,30 @@ public class Rail : MonoBehaviour
     {
         Mesh mesh = new Mesh();
         List<Vector3> vertices = new();
-        foreach (Profile profile in profiles)
+        List<Vector3> normals = new();
+        foreach (Profile part in profiles)
         {
-            List<Vector3> profileVertices = profile.Vertices;
-            vertices.AddRange(profileVertices);
+            vertices.AddRange(part.Vertices);
+            normals.AddRange(part.Normals);
         }
 
         mesh.vertices = vertices.ToArray();
-
+        mesh.normals = normals.ToArray();
 
         List<int> triangles = new();
-        List<Vector3> normals = new();
         for (int i = 0; i < profiles.Count - 1; i++)
         {
-            AddTrianglesBetweenProfiles(triangles, normals, positionCount * 2, i);
+            AddTrianglesBetweenProfiles(triangles, positionCount * 2, i);
         }
         
         mesh.triangles = triangles.ToArray();
-        mesh.normals = normals.ToArray();
+        
 
         meshFilter.mesh = mesh;
     }
 
 
-    private void AddTrianglesBetweenProfiles(List<int> triangles, List<Vector3> normals, int count, int profileIndex)
+    private void AddTrianglesBetweenProfiles(List<int> triangles, int count, int profileIndex)
     {
         for (int vertexIndex = 0; vertexIndex < count; vertexIndex++) //Iteration durch die Dreiecke
         {
