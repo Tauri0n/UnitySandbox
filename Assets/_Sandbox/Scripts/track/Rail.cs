@@ -1,19 +1,25 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Collections;
 using UnityEngine;
 
+[ExecuteInEditMode]
 public class Rail : MonoBehaviour
 {
     private int lastResolution = 1;
+    private Vector3 lastStartSpline;
+    private Vector3 lastEndSpline;
     [SerializeField] private int resolution = 1;
     [SerializeField] private GameObject start;
+    [SerializeField] private Transform startSpline;
     [SerializeField] private Profile profile;
     [SerializeField] private GameObject end;
+    [SerializeField] private Transform endSpline;
 
     private Profile startProfile;
     private Profile endProfile;
-    private List<Profile> profiles = new List<Profile>();
+    private readonly List<Profile> profiles = new ();
 
     [SerializeField] private MeshFilter meshFilter;
 
@@ -42,36 +48,56 @@ public class Rail : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (lastResolution != resolution)
-        {
-            if (resolution < 1) resolution = 1;
-            if (resolution > 100) resolution = 100;
-            BuildProfiles();
-            BuildMesh();
-            lastResolution = resolution;
-        }
+        if (lastResolution == resolution 
+            && lastStartSpline == startSpline.position 
+            && lastEndSpline == endSpline.position) return;
+        if (resolution < 1) resolution = 1;
+        if (resolution > 100) resolution = 100;
+        BuildProfiles();
+        BuildMesh();
+        lastResolution = resolution;
+        lastStartSpline = startSpline.position;
+        lastEndSpline = endSpline.position;
     }
 
-    private void BuildProfiles()
+    public void BuildProfiles()
     {
         profiles.Clear();
-        for (int i = transform.childCount - 1; i >= 3; i--)
+        for (int i = transform.childCount - 1; i >= 4; i--)
         {
-            Destroy(transform.GetChild(i).gameObject);
+            GameObject child = transform.GetChild(i).gameObject;
+            DestroyImmediate(child);
         }
 
         profiles.Add(startProfile);
+        
+        //startProfile.transform.LookAt(startSpline.position);
+        //endProfile.transform.LookAt(endSpline.position);
 
-        Vector3[] positions = new Vector3[positionCount];
-        lineRenderer.GetPositions(positions);
+        Vector3[] profilePositions = new Vector3[positionCount];
+        lineRenderer.GetPositions(profilePositions);
+        Vector3 startPosition = start.transform.position;
+        Quaternion startRotation = start.transform.rotation;
+        Vector3 endPosition = end.transform.position;
+        Quaternion endRotation = end.transform.rotation;
 
 
         for (int i = 0; i < resolution; i++)
         {
-            Profile instance = Instantiate(profile, transform.position, transform.rotation);
+            float t = ((float)i + 1) / ((float)resolution + 1);
+            Vector3 startStartSplinePosition = Vector3.Lerp(startPosition, startSpline.position, t);
+            Quaternion startStartRotation = Quaternion.Lerp(startRotation, startSpline.rotation, t);
+            
+            Vector3 endSplineEndPosition = Vector3.Lerp(endSpline.position, endPosition, t);
+            Quaternion endSplineEndRotation = Quaternion.Lerp(endSpline.rotation, endRotation, t);
+            
+            Vector3 position = Vector3.Lerp(startStartSplinePosition, endSplineEndPosition, t);
+            Quaternion rotation = Quaternion.Lerp(startStartRotation, endSplineEndRotation, t);
+            
+            Profile instance = Instantiate(profile, position, rotation);
             instance.Rail = this;
             instance.transform.parent = transform;
-            instance.Vertices = new List<Vector3>(positions);
+            instance.Vertices = new List<Vector3>(profilePositions);
             profiles.Add(instance);
         }
 

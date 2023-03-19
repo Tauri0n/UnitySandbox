@@ -5,6 +5,7 @@ using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
 
+[ExecuteInEditMode]
 public class Profile : MonoBehaviour
 {
     private Vector3 lastPosition;
@@ -71,6 +72,7 @@ public class Profile : MonoBehaviour
         if (position.Equals(lastPosition) && rotation.Equals(lastRotation)) return;
         lastPosition = position;
         lastRotation = rotation;
+        Rail.BuildProfiles();
         Rail.BuildMesh();
     }
 }
